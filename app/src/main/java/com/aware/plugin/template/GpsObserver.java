@@ -21,7 +21,10 @@ import com.aware.providers.Screen_Provider;
 public class GpsObserver extends ContentObserver {
 
     Context context;
-    private static final String TAG = "gps";
+    private static final String TAG = "AWARE-PLUGIN";
+    int timesOccured = 0;
+    String prevLat;
+    String prevLng;
     public GpsObserver(Handler handler,Context myContext) {
         super(handler);
         context=myContext;
@@ -30,7 +33,9 @@ public class GpsObserver extends ContentObserver {
     public void onChange(boolean selfChange) {
         Cursor latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE);    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
         Cursor lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LONGITUDE);   //slight change made: added 'context', otherwise getContentResolver didn't work.
-        Cursor timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.TIMESTAMP);  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+        Cursor timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP);  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+
+
         if(latCursor!=null && lngCursor!=null && timeCursor != null){
             latCursor.moveToFirst();
             lngCursor.moveToFirst();
@@ -42,13 +47,45 @@ public class GpsObserver extends ContentObserver {
             timeCursor.moveToNext();
         }
 
-        String lat = latCursor.getString(latCursor.getColumnIndex("latitude"));
-        String lng = lngCursor.getString(lngCursor.getColumnIndex("longitude"));
+        String lat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
+        String lng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
         String time = timeCursor.getString(timeCursor.getColumnIndex("timestamp"));
+
+        if(latCursor.getPosition() >= 2) {
+            latCursor.moveToPrevious();
+            lngCursor.moveToPrevious();
+            prevLat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));;
+            prevLng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));;
+
+            latCursor.moveToNext();
+            lngCursor.moveToNext();
+        }
+        else{
+            prevLat = lat;
+            prevLng = lng;
+        }
+
+        if(prevLat.equals(lat) && prevLng.equals(lng))
+        {
+            timesOccured++;
+        }
+        else{
+            timesOccured=0;
+        }
+        if(timesOccured == 12){
+            Plugin.data.add(new Data(lat, lng, time));
+        }
 
         Log.i(TAG,lat);
         Log.i(TAG,lng);
         Log.i(TAG,time);
+        store(lat,lng,time);
 
     }
+
+    public void store(String lat, String lng, String time){
+
+
+    }
+
 }
