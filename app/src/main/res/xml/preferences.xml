@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:key="plugin_template"
-    android:title="@string/app_name">
+    android:title="@string/app_name"
+    android:name="com.aware.plugin">
 
     <com.aware.ui.Aware_Toolbar android:title="@string/app_name" />
 

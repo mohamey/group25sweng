@@ -1,5 +1,6 @@
 package com.aware.plugin.template;
 
+import android.Manifest;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Handler;
@@ -23,11 +24,11 @@ public class Plugin extends Aware_Plugin {
     static ArrayList<Data> data = new ArrayList<Data>();
 
     GpsObserver gpsO;
+    final String TAG = "AWARE-PLUGIN";
     @Override
     public void onCreate() {
         super.onCreate();
 
-        TAG = "AWARE::"+getResources().getString(R.string.app_name);
         DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
         if(DEBUG)
             Log.d("Begin", "Group 25 pluggin running");
@@ -40,9 +41,9 @@ public class Plugin extends Aware_Plugin {
         }
 
         //some temporary variables
-        int gpsFrequency = 300;
+        int gpsFrequency = 10;
         int gpsAccuracy = 150;
-        int locationExpTime = 300;
+        int locationExpTime = 10;
 
         //Activate programmatically any sensors/plugins you need here
         //e.g., Aware.setSetting(this, Aware_Preferences.STATUS_ACCELEROMETER,true);
@@ -75,6 +76,10 @@ public class Plugin extends Aware_Plugin {
 
         //Add permissions you need (Support for Android M) e.g.,
         //REQUIRED_PERMISSIONS.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        REQUIRED_PERMISSIONS.add(Manifest.permission.INTERNET);
+        REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_NETWORK_STATE);
 
         //To sync data to the server, you'll need to set this variables from your ContentProvider
         //DATABASE_TABLES = Provider.DATABASE_TABLES
@@ -117,6 +122,7 @@ public class Plugin extends Aware_Plugin {
         Aware.stopPlugin(this, "com.aware.plugin.template");
     }
 
+    //Schedule a survey
     private void scheduleMorningQuestionnaire(){
         try {
             Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
@@ -126,11 +132,12 @@ public class Plugin extends Aware_Plugin {
                 .addActionExtra(ESM.EXTRA_ESM, getSurvey()) ;//and this extra
             Scheduler.saveSchedule(getApplicationContext(), schedule);
         }
-        catch (JSONException e) {
-            e.printStackTrace();
+        catch (JSONException except) {
+            Log.e(TAG, "An exception occured scheduling the morning questionnaire", except);
         }
     }
 
+    //Get a survey to deliver to user
     public String getSurvey() {
 
         String SURVEYQUESTION = "";
@@ -150,18 +157,25 @@ public class Plugin extends Aware_Plugin {
         return SURVEYQUESTION;
     }
 
-
+    //Assign Context to certain location
     public void assignContext() {
-        Cursor context = getContentResolver().query(ESM_Provider.ESM_Data.CONTENT_URI, null, null, null, null);
-        context.moveToLast();
-        for (int i = data.size(); i > 0; i--) {
-            context.moveToPrevious();
+        try{
+            Cursor context = getContentResolver().query(ESM_Provider.ESM_Data.CONTENT_URI, null, null, null, null);
+            context.moveToLast();
+            for (int i = data.size(); i > 0; i--) {
+                context.moveToPrevious();
+            }
+
+            if(data.size() > 0){
+                int i = 0;
+                do{
+                    data.get(i).context= context.getString(context.getColumnIndex("esm_user_answer"));
+                }while (context.moveToNext());
+            }
+        }catch(NullPointerException except) {
+            Log.e(TAG, "There was a null pointer exception", except);
         }
 
-        int i = 0;
-        do{
-            data.get(i).context= context.getString(context.getColumnIndex("esm_user_answer"));
-        }while (context.moveToNext());
 
     }
 }
