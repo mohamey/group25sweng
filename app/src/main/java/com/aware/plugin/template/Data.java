@@ -4,6 +4,8 @@ package com.aware.plugin.template;
  * Created by Nicky on 03-Mar-16.
  */
 class Data {
+    String url;
+    String name;
     String lat;
     String lng;
     String time;
@@ -14,5 +16,18 @@ class Data {
         this.lng = lng;
         this.time = time;
         this.context = "";
+    }
+
+    public Data(String[] dbData){
+        this.url = dbData[0];
+        this.name = dbData[1];
+        this.lat = dbData[2];
+        this.lng = dbData[3];
+        this.time = dbData[4];
+    }
+
+    public String[] dumpArray(){
+        String[] result = {this.url,this.name,this.lat,this.lng,this.time};
+        return result;
     }
 }

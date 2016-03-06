@@ -1,9 +1,6 @@
 package com.aware.plugin.template;
 
-import com.aware.Aware;
-import com.aware.Aware_Preferences;
 import com.aware.providers.Locations_Provider;
-import com.aware.utils.Aware_Plugin;
 
 import android.content.Context;
 import android.database.ContentObserver;
@@ -11,14 +8,15 @@ import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
-import com.aware.providers.Screen_Provider;
 import com.aware.utils.Http;
 
 import java.text.Format;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
 
@@ -28,84 +26,117 @@ import java.util.Hashtable;
  */
 public class GpsObserver extends ContentObserver {
 
+    //Required Global Variables
     Context context;
     private static final String TAG = "AWARE-PLUGIN";
     int timesOccured = 0;
-    String prevLat;
-    String prevLng;
+    String prevLat, prevLng, name = Build.MODEL, url = "http://mohamey.me/aware.php";
+    ArrayList<Data> backlog;
+
+    //Declare the cursors
+    Cursor latCursor, lngCursor, timeCursor;
     public GpsObserver(Handler handler,Context myContext) {
         super(handler);
         context=myContext;
+
+        //When network is unavailable, log locations here
+        backlog = new ArrayList<Data>();
+
+        //Cursors used to get data from phone
+        latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE);    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
+        lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE);   //slight change made: added 'context', otherwise getContentResolver didn't work.
+        timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP);  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+
     }
 
     public void onChange(boolean selfChange) {
-        //Cursors used to get data from phone
-        Cursor latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE);    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
-        Cursor lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LONGITUDE);   //slight change made: added 'context', otherwise getContentResolver didn't work.
-        Cursor timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP);  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
 
-
-        if(latCursor!=null && lngCursor!=null && timeCursor != null){
+         if(latCursor!=null && lngCursor!=null && timeCursor != null){
             latCursor.moveToFirst();
             lngCursor.moveToFirst();
             timeCursor.moveToFirst();
+
+             String lat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
+             String lng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
+             Double time = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
+
+             if(latCursor.getPosition() == 0) {
+                 try{
+                     String[] params = {url,name,lat,lng,time+""};
+                     sendData(params);
+                 }catch(Exception except) {
+                     Log.e(TAG, "There was an error logging the initial location value", except);
+                 }
+
+             }else if(latCursor.getPosition() > 0){
+                 if(prevLat.equals(lat) && prevLng.equals(lng))
+                 {
+                     timesOccured++;
+                 }
+                 else{
+                     timesOccured=0;
+                     //If the location is not the same, send it to the database!
+                     try{
+                         String[] params = {url,name,lat,lng,time+""};
+                         sendData(params);
+                     }catch(Exception except){
+                         Log.e(TAG, "There was an error sending the data to the database", except);
+                     }
+                 }
+                 if(timesOccured == 12) {
+                     Plugin.data.add(new Data(lat, lng, time+""));
+                 }
+
+                 Log.i(TAG,lat);
+                 Log.i(TAG,lng);
+                 Log.i(TAG,time+"");
+                 store(lat,lng,time+"");
+             }
+
+             prevLat = lat;
+             prevLng = lng;
+
+             //Advance the cursors
+             latCursor.moveToNext();
+             lngCursor.moveToNext();
+             timeCursor.moveToNext();
         }
         else {
-            latCursor.moveToNext();
-            lngCursor.moveToNext();
-            timeCursor.moveToNext();
+            Log.i(TAG, "Cursors were null");
         }
-
-        String lat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
-        String lng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
-        String time = timeCursor.getString(timeCursor.getColumnIndex("timestamp"));
-
-        if(latCursor.getPosition() >= 2) {
-            latCursor.moveToPrevious();
-            lngCursor.moveToPrevious();
-            prevLat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));;
-            prevLng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));;
-
-            latCursor.moveToNext();
-            lngCursor.moveToNext();
-        }
-        else{
-            prevLat = lat;
-            prevLng = lng;
-        }
-
-        if(prevLat.equals(lat) && prevLng.equals(lng))
-        {
-            timesOccured++;
-        }
-        else{
-            timesOccured=0;
-        }
-        if(timesOccured == 12){
-            Plugin.data.add(new Data(lat, lng, time));
-        }
-
-        //Try send the data to a database
-        try{
-            String name = android.os.Build.MODEL;
-            String[] params = {"http://mohamey.me/aware.php",name,lat,lng,time};
-            sendToDatabase bitchin = new sendToDatabase(context);
-            bitchin.loadData(params);
-            bitchin.execute();
-        }catch(Exception except){
-            Log.e(TAG, "There was an error sending the data to the database", except);
-        }
-
-        Log.i(TAG,lat);
-        Log.i(TAG,lng);
-        Log.i(TAG,time);
-        store(lat,lng,time);
-
     }
 
     public void store(String lat, String lng, String time){
 
 
+    }
+
+    //Prepare and send data to database
+    void sendData(String[] params){
+        //Set up network info
+        ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+        //Send data when network is available
+        if(networkInfo != null && networkInfo.isConnected()) {
+            if(!backlog.isEmpty()){
+                for(Data object: backlog){
+                    sendToDatabase backBitchin = new sendToDatabase(context);
+                    backBitchin.loadData(object.dumpArray());
+                    backBitchin.execute();
+                }
+                Log.i(TAG, "Sent data objects from the backlog");
+                backlog.clear();
+            }
+            sendToDatabase bitchin = new sendToDatabase(context);
+            bitchin.loadData(params);
+            bitchin.execute();
+        }else{
+            //Stick the data in the backlog
+            Data temp = new Data(params);
+            backlog.add(temp);
+            Log.i(TAG, "Added new Data object to the backlog");
+        }
     }
 
     public class sendToDatabase extends AsyncTask<String, Void, Void>{

@@ -41,9 +41,9 @@ public class Plugin extends Aware_Plugin {
         }
 
         //some temporary variables
-        int gpsFrequency = 10;
+        int gpsFrequency = 180;
         int gpsAccuracy = 150;
-        int locationExpTime = 10;
+        int locationExpTime = 300;
 
         //Activate programmatically any sensors/plugins you need here
         //e.g., Aware.setSetting(this, Aware_Preferences.STATUS_ACCELEROMETER,true);
@@ -56,10 +56,10 @@ public class Plugin extends Aware_Plugin {
         Aware.startSensor(this, Aware_Preferences.STATUS_LOCATION_GPS);
 
         //esm setup:
-        Aware.setSetting(this, Aware_Preferences.STATUS_ESM, true); //we will need the ESMs
-        Aware.startSensor(this, Aware_Preferences.STATUS_ESM); //ask AWARE to start ESM
+        //Aware.setSetting(this, Aware_Preferences.STATUS_ESM, true); //we will need the ESMs
+        //Aware.startSensor(this, Aware_Preferences.STATUS_ESM); //ask AWARE to start ESM
 
-        Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
+        //Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
 
 
         gpsO = new GpsObserver(new Handler(),this);    //two import options for 'Handler', I went with 'android.os.Handler'.
@@ -86,11 +86,11 @@ public class Plugin extends Aware_Plugin {
         //TABLES_FIELDS = Provider.TABLES_FIELDS
         //CONTEXT_URIS = new Uri[]{ Provider.Table_Data.CONTENT_URI }
 
-        Cursor context;
+        //Cursor context;
 
-        scheduleMorningQuestionnaire(); //see further below
+        //scheduleMorningQuestionnaire(); //see further below
 
-        assignContext();
+        //assignContext();
 
 
         //Activate plugin

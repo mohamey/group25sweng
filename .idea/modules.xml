@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Sweng-Plugin.iml" filepath="$PROJECT_DIR$/Sweng-Plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/group25sweng.iml" filepath="$PROJECT_DIR$/group25sweng.iml" />
     </modules>
   </component>
 </project>
