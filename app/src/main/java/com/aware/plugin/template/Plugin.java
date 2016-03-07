@@ -41,7 +41,7 @@ public class Plugin extends Aware_Plugin {
         }
 
         //some temporary variables
-        int gpsFrequency = 180;
+        int gpsFrequency = 300;
         int gpsAccuracy = 150;
         int locationExpTime = 300;
 

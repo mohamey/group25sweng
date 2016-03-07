@@ -29,8 +29,9 @@ public class GpsObserver extends ContentObserver {
     //Required Global Variables
     Context context;
     private static final String TAG = "AWARE-PLUGIN";
-    int timesOccured = 0;
+    int timesOccured = 0, oldRows;
     String prevLat, prevLng, name = Build.MODEL, url = "http://mohamey.me/aware.php";
+    Double prevTime;
     ArrayList<Data> backlog;
 
     //Declare the cursors
@@ -42,35 +43,64 @@ public class GpsObserver extends ContentObserver {
         //When network is unavailable, log locations here
         backlog = new ArrayList<Data>();
 
-        //Cursors used to get data from phone
-        latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE);    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
-        lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE);   //slight change made: added 'context', otherwise getContentResolver didn't work.
-        timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP);  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+        try{
+            //Cursors used to get data from phone
+            latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
+            lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
+            timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP + " DESC LIMIT 1");  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+
+            if(latCursor != null && lngCursor != null && timeCursor != null){
+                oldRows = latCursor.getCount();
+
+                latCursor.moveToFirst();
+                lngCursor.moveToFirst();
+                timeCursor.moveToFirst();
+                prevLat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
+                prevLng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
+                prevTime = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
+
+                //Send the initial location
+                try{
+                    String[] params = {url,name,prevLat,prevLng,prevTime+""};
+                    sendData(params);
+                }catch(Exception except) {
+                    Log.e(TAG, "There was an error logging the initial location value", except);
+                }
+            }
+
+        }catch(Exception except){
+            Log.e(TAG, "There was an error initialising the cursor", except);
+        }
 
     }
 
     public void onChange(boolean selfChange) {
+        super.onChange(selfChange);
+        //Reinitialise cursors
+        latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
+        lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
+        timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP+" DESC LIMIT 1");  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
 
-         if(latCursor!=null && lngCursor!=null && timeCursor != null){
-            latCursor.moveToFirst();
-            lngCursor.moveToFirst();
-            timeCursor.moveToFirst();
+
+        if(latCursor!=null && lngCursor!=null && timeCursor != null){
+             latCursor.moveToFirst();
+             lngCursor.moveToFirst();
+             timeCursor.moveToFirst();
 
              String lat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
              String lng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
              Double time = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
 
-             if(latCursor.getPosition() == 0) {
-                 try{
-                     String[] params = {url,name,lat,lng,time+""};
-                     sendData(params);
-                 }catch(Exception except) {
-                     Log.e(TAG, "There was an error logging the initial location value", except);
-                 }
-
-             }else if(latCursor.getPosition() > 0){
+            if(latCursor.getPosition() == 0 && prevTime < time ){
                  if(prevLat.equals(lat) && prevLng.equals(lng))
                  {
+                     //TEMPORARY - send all values to DB
+                     /*try{
+                         String[] params = {url,name,lat,lng,time+""};
+                         sendData(params);
+                     }catch(Exception except){
+                         Log.e(TAG, "There was an error sending the data to the database", except);
+                     }*/
                      timesOccured++;
                  }
                  else{
@@ -87,21 +117,36 @@ public class GpsObserver extends ContentObserver {
                      Plugin.data.add(new Data(lat, lng, time+""));
                  }
 
-                 Log.i(TAG,lat);
-                 Log.i(TAG,lng);
-                 Log.i(TAG,time+"");
-                 store(lat,lng,time+"");
-             }
+
+
+                //Advance the cursors, but only if size of DB changed
+                //int newCount = latCursor.getCount();
+                //if(oldRows < newCount){
+                //    latCursor.moveToNext();
+                //    lngCursor.moveToNext();
+                //    timeCursor.moveToNext();
+                //    oldRows = newCount;
+                //    Log.i(TAG, "Advanced the cursors");
+                //}
+
+             }else{
+                if(latCursor.getPosition() != 0)
+                    Log.i(TAG, "The cursors were not pointed at 0");
+                else
+                    Log.i(TAG, "New Time is equal to previous time. Cursor at row "+latCursor.getPosition()+" of "+(latCursor.getCount()-1));
+            }
+
+            Log.i(TAG,lat);
+            Log.i(TAG, lng);
+            Log.i(TAG, time + "");
+            store(lat,lng,time+"");
 
              prevLat = lat;
              prevLng = lng;
+             prevTime = time;
 
-             //Advance the cursors
-             latCursor.moveToNext();
-             lngCursor.moveToNext();
-             timeCursor.moveToNext();
-        }
-        else {
+
+        }else {
             Log.i(TAG, "Cursors were null");
         }
     }
