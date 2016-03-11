@@ -58,7 +58,7 @@ public class Plugin extends Aware_Plugin {
         Aware.startSensor(this, Aware_Preferences.STATUS_LOCATION_GPS);
 
         //esm setup:
-        //Aware.setSetting(this, Aware_Preferences.STATUS_ESM, true); //we will need the ESMs
+        Aware.setSetting(this, Aware_Preferences.STATUS_ESM, true); //we will need the ESMs
         Aware.startSensor(this, Aware_Preferences.STATUS_ESM); //ask AWARE to start ESM
 
         //Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
@@ -130,11 +130,11 @@ public class Plugin extends Aware_Plugin {
             Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, 15);
-            cal.set(Calendar.MINUTE, 20);
+            cal.set(Calendar.MINUTE, 33);
             schedule.setTimer(cal) //we want this schedule every day at 8PM
-                .setActionType(Scheduler.ACTION_TYPE_BROADCAST) //we are doing a broadcast
-                .setActionClass(ESM.ACTION_AWARE_QUEUE_ESM) //with this action
-                .addActionExtra(ESM.EXTRA_ESM, getSurvey()) ;//and this extra
+            schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST) //we are doing a broadcast
+            schedule.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM) //with this action
+            schedule.addActionExtra(ESM.EXTRA_ESM, getSurvey()) ;//and this extra
             Scheduler.saveSchedule(getApplicationContext(), schedule);
         }
         catch (JSONException except) {
