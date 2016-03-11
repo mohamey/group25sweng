@@ -22,6 +22,8 @@ import java.util.ArrayList;
 public class Plugin extends Aware_Plugin {
 
     static ArrayList<Data> data = new ArrayList<Data>();
+    Data dummy = new Data("53.3478", "6.2597", "15:00:00");
+    data.add(dummy);
 
     GpsObserver gpsO;
     final String TAG = "AWARE-PLUGIN";
@@ -57,7 +59,7 @@ public class Plugin extends Aware_Plugin {
 
         //esm setup:
         //Aware.setSetting(this, Aware_Preferences.STATUS_ESM, true); //we will need the ESMs
-        //Aware.startSensor(this, Aware_Preferences.STATUS_ESM); //ask AWARE to start ESM
+        Aware.startSensor(this, Aware_Preferences.STATUS_ESM); //ask AWARE to start ESM
 
         //Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
 
@@ -88,7 +90,7 @@ public class Plugin extends Aware_Plugin {
 
         //Cursor context;
 
-        //scheduleMorningQuestionnaire(); //see further below
+        scheduleMorningQuestionnaire(); //see further below
 
         //assignContext();
 
@@ -126,7 +128,7 @@ public class Plugin extends Aware_Plugin {
     private void scheduleMorningQuestionnaire(){
         try {
             Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
-            schedule.addHour(20) //we want this schedule every day at 8PM
+            schedule.addHour(15) //we want this schedule every day at 8PM
                 .setActionType(Scheduler.ACTION_TYPE_BROADCAST) //we are doing a broadcast
                 .setActionClass(ESM.ACTION_AWARE_QUEUE_ESM) //with this action
                 .addActionExtra(ESM.EXTRA_ESM, getSurvey()) ;//and this extra
