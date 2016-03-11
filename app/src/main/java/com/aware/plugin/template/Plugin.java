@@ -128,7 +128,10 @@ public class Plugin extends Aware_Plugin {
     private void scheduleMorningQuestionnaire(){
         try {
             Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
-            schedule.addHour(15) //we want this schedule every day at 8PM
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 15);
+            cal.set(Calendar.MINUTE, 20);
+            schedule.setTimer(cal) //we want this schedule every day at 8PM
                 .setActionType(Scheduler.ACTION_TYPE_BROADCAST) //we are doing a broadcast
                 .setActionClass(ESM.ACTION_AWARE_QUEUE_ESM) //with this action
                 .addActionExtra(ESM.EXTRA_ESM, getSurvey()) ;//and this extra
