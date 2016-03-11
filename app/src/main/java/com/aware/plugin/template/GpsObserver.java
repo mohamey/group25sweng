@@ -48,9 +48,9 @@ public class GpsObserver extends ContentObserver {
             latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
             lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
             timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP + " DESC LIMIT 1");  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+            Log.i(TAG, "Set Cursors from Constructor");
 
             if(latCursor != null && lngCursor != null && timeCursor != null){
-                oldRows = latCursor.getCount();
 
                 latCursor.moveToFirst();
                 lngCursor.moveToFirst();
@@ -63,6 +63,7 @@ public class GpsObserver extends ContentObserver {
                 try{
                     String[] params = {url,name,prevLat,prevLng,prevTime+""};
                     sendData(params);
+                    Log.i(TAG, "Sent initial location to database");
                 }catch(Exception except) {
                     Log.e(TAG, "There was an error logging the initial location value", except);
                 }
@@ -95,12 +96,13 @@ public class GpsObserver extends ContentObserver {
                  if(prevLat.equals(lat) && prevLng.equals(lng))
                  {
                      //TEMPORARY - send all values to DB
-                     /*try{
+                     try{
                          String[] params = {url,name,lat,lng,time+""};
                          sendData(params);
+                         Log.i(TAG, "Sent duplicate location");
                      }catch(Exception except){
                          Log.e(TAG, "There was an error sending the data to the database", except);
-                     }*/
+                     }
                      timesOccured++;
                  }
                  else{
@@ -109,6 +111,7 @@ public class GpsObserver extends ContentObserver {
                      try{
                          String[] params = {url,name,lat,lng,time+""};
                          sendData(params);
+                         Log.i(TAG, "Sent new location");
                      }catch(Exception except){
                          Log.e(TAG, "There was an error sending the data to the database", except);
                      }

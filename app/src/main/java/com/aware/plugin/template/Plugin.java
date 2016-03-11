@@ -17,20 +17,20 @@ import com.aware.utils.Scheduler;
 import org.json.JSONException;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 
 public class Plugin extends Aware_Plugin {
 
     static ArrayList<Data> data = new ArrayList<Data>();
     Data dummy = new Data("53.3478", "6.2597", "15:00:00");
-    data.add(dummy);
 
     GpsObserver gpsO;
     final String TAG = "AWARE-PLUGIN";
     @Override
     public void onCreate() {
         super.onCreate();
-
+        data.add(dummy);
         DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
         if(DEBUG)
             Log.d("Begin", "Group 25 pluggin running");
@@ -130,10 +130,10 @@ public class Plugin extends Aware_Plugin {
             Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, 15);
-            cal.set(Calendar.MINUTE, 33);
-            schedule.setTimer(cal) //we want this schedule every day at 8PM
-            schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST) //we are doing a broadcast
-            schedule.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM) //with this action
+            cal.set(Calendar.MINUTE, 37);
+            schedule.setTimer(cal); //we want this schedule every day at 8PM
+            schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST); //we are doing a broadcast
+            schedule.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM); //with this action
             schedule.addActionExtra(ESM.EXTRA_ESM, getSurvey()) ;//and this extra
             Scheduler.saveSchedule(getApplicationContext(), schedule);
         }
@@ -149,10 +149,10 @@ public class Plugin extends Aware_Plugin {
 
         for (int i = 0; i < data.size(); i++) {
             SURVEYQUESTION += "[{'esm':{" +
-                    "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
-                    "'esm_title': Question" + (i + 1) + "," +
-                    "'esm_instructions': Could you please give a name for the location the coordinates" +
-                    data.get(i).lat + data.get(i).lng + "(You left here at " + data.get(i).time + ")," +
+                    "'esm_type': BITCHIN," +
+                    "'esm_title': Question: WHERE THEM HOES AT," +
+                    "'esm_instructions': Could you please give a name for the location for the coordinates" +
+                    "69.6969, 66.6666 (You left here at 19:99)," +
                     "'esm_submit': 'Submit.'," +
                     "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
                     "'esm_trigger': 'com.aware.plugin.template'" +
