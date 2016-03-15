@@ -113,7 +113,7 @@ public class Plugin extends Aware_Plugin {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
+        Aware.stopSensor(this, Aware_Preferences.STATUS_ESM); //turn off ESM for our plugin
         Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, false);
         getContentResolver().unregisterContentObserver(gpsO);
 
@@ -126,41 +126,47 @@ public class Plugin extends Aware_Plugin {
 
     //Schedule a survey
     private void scheduleMorningQuestionnaire(){
-        try {
+        try{
             Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.HOUR_OF_DAY, 15);
-            cal.set(Calendar.MINUTE, 37);
-            schedule.setTimer(cal); //we want this schedule every day at 8PM
-            schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST); //we are doing a broadcast
-            schedule.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM); //with this action
-            schedule.addActionExtra(ESM.EXTRA_ESM, getSurvey()) ;//and this extra
+            schedule.addHour(15);
+            schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST);
+            schedule.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM);
+            schedule.addActionExtra(ESM.EXTRA_ESM, MORNINGJSON);
             Scheduler.saveSchedule(getApplicationContext(), schedule);
+        }catch(JSONException e){
+            Log.e(TAG, "Json Exception scheduling questionnaire!", e);
         }
-        catch (JSONException except) {
-            Log.e(TAG, "An exception occured scheduling the morning questionnaire", except);
-        }
+
     }
+
+    private static final String MORNINGJSON = "[{'esm':{" +
+            "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
+            "'esm_title': 'How did you sleep?'," +
+            "'esm_instructions': 'How did you sleep last night? Please provide an estimate on a scale from 1 (worst) to 10 (best) as well as a written description of your night!'," +
+            "'esm_submit': 'Submit.'," +
+            "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
+            "'esm_trigger': 'com.aware.plugin.goodmorning'" +
+            "}}]";
 
     //Get a survey to deliver to user
-    public String getSurvey() {
+    // public String getSurvey() {
 
-        String SURVEYQUESTION = "";
+    //     String SURVEYQUESTION = "";
 
-        for (int i = 0; i < data.size(); i++) {
-            SURVEYQUESTION += "[{'esm':{" +
-                    "'esm_type': BITCHIN," +
-                    "'esm_title': Question: WHERE THEM HOES AT," +
-                    "'esm_instructions': Could you please give a name for the location for the coordinates" +
-                    "69.6969, 66.6666 (You left here at 19:99)," +
-                    "'esm_submit': 'Submit.'," +
-                    "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
-                    "'esm_trigger': 'com.aware.plugin.template'" +
-                    "}}]";
-        }
+    //     for (int i = 0; i < data.size(); i++) {
+    //         SURVEYQUESTION += "[{'esm':{" +
+    //                 "'esm_type': BITCHIN," +
+    //                 "'esm_title': Question: WHERE THEM HOES AT," +
+    //                 "'esm_instructions': Could you please give a name for the location for the coordinates" +
+    //                 "69.6969, 66.6666 (You left here at 19:99)," +
+    //                 "'esm_submit': 'Submit.'," +
+    //                 "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
+    //                 "'esm_trigger': 'com.aware.plugin.template'" +
+    //                 "}}]";
+    //     }
 
-        return SURVEYQUESTION;
-    }
+    //     return SURVEYQUESTION;
+    // }
 
     //Assign Context to certain location
     public void assignContext() {
