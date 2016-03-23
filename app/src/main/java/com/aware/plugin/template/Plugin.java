@@ -33,7 +33,7 @@ public class Plugin extends Aware_Plugin {
         data.add(dummy);
         DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
         if(DEBUG)
-            Log.d("Begin", "Group 25 pluggin running");
+            Log.d("Begin", "Group 25 plugin running");
 
 
 
@@ -80,8 +80,6 @@ public class Plugin extends Aware_Plugin {
         //REQUIRED_PERMISSIONS.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_FINE_LOCATION);
         REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        REQUIRED_PERMISSIONS.add(Manifest.permission.INTERNET);
-        REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_NETWORK_STATE);
 
         //To sync data to the server, you'll need to set this variables from your ContentProvider
         //DATABASE_TABLES = Provider.DATABASE_TABLES

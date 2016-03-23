@@ -1,6 +1,7 @@
 package com.aware.plugin.template;
 
 import com.aware.providers.Locations_Provider;
+import com.aware.providers.Applications_Provider;
 
 import android.content.Context;
 import android.database.ContentObserver;
@@ -29,13 +30,12 @@ public class GpsObserver extends ContentObserver {
     //Required Global Variables
     Context context;
     private static final String TAG = "AWARE-PLUGIN";
-    int timesOccured = 0, oldRows;
-    String prevLat, prevLng, name = Build.MODEL, url = "http://mohamey.me/aware.php";
+    String prevLat, prevLng, prevApp = "No Apps Running", name = Build.MODEL, url = "http://mohamey.me/aware.php";
     Double prevTime;
     ArrayList<Data> backlog;
 
     //Declare the cursors
-    Cursor latCursor, lngCursor, timeCursor;
+    Cursor latCursor, lngCursor, timeCursor, appNameCursor;
     public GpsObserver(Handler handler,Context myContext) {
         super(handler);
         context=myContext;
@@ -48,6 +48,7 @@ public class GpsObserver extends ContentObserver {
             latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
             lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
             timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP + " DESC LIMIT 1");  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+            appNameCursor = context.getContentResolver().query(Applications_Provider.Applications_Foreground.CONTENT_URI, null, null, null, Applications_Provider.Applications_Foreground.APPLICATION_NAME + " DESC LIMIT 1");
             Log.i(TAG, "Set Cursors from Constructor");
 
             if(latCursor != null && lngCursor != null && timeCursor != null){
@@ -55,17 +56,26 @@ public class GpsObserver extends ContentObserver {
                 latCursor.moveToFirst();
                 lngCursor.moveToFirst();
                 timeCursor.moveToFirst();
-                prevLat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
-                prevLng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
-                prevTime = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
+                appNameCursor.moveToFirst();
+                try{
+                    prevLat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
+                    prevLng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
+                    prevTime = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
+                    if(appNameCursor.getCount() > 0)
+                        prevApp = appNameCursor.getString(appNameCursor.getColumnIndex("application_name"));
+                    else
+                        Log.i(TAG, "There were no apps running in the foreground");
+                }catch(Exception except){
+                    Log.e(TAG, "Problem logging cursor data", except);
+                }
 
                 //Send the initial location
                 try{
-                    String[] params = {url,name,prevLat,prevLng,prevTime+""};
+                    String[] params = {url,name,prevLat,prevLng,prevApp,prevTime+""};
                     sendData(params);
-                    Log.i(TAG, "Sent initial location to database");
+                    Log.i(TAG, "Sent initial location and app to database");
                 }catch(Exception except) {
-                    Log.e(TAG, "There was an error logging the initial location value", except);
+                    Log.e(TAG, "There was an error logging the initial location and app value", except);
                 }
             }
 
@@ -78,60 +88,49 @@ public class GpsObserver extends ContentObserver {
     public void onChange(boolean selfChange) {
         super.onChange(selfChange);
         //Reinitialise cursors
-        latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
-        lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
-        timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP+" DESC LIMIT 1");  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+        try{
+            latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
+            lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
+            timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP+" DESC LIMIT 1");  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
+            appNameCursor = context.getContentResolver().query(Applications_Provider.Applications_Foreground.CONTENT_URI, null, null, null, Applications_Provider.Applications_Foreground.APPLICATION_NAME + " DESC LIMIT 1");
+        }catch(Exception except){
+            Log.e(TAG, "Problem logging cursor data. Ignore if null pointer from app cursor.", except);
+        }
 
+        if(latCursor!=null && lngCursor!=null && timeCursor != null && appNameCursor !=null){
+            latCursor.moveToFirst();
+            lngCursor.moveToFirst();
+            timeCursor.moveToFirst();
 
-        if(latCursor!=null && lngCursor!=null && timeCursor != null){
-             latCursor.moveToFirst();
-             lngCursor.moveToFirst();
-             timeCursor.moveToFirst();
+            String lat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
+            String lng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
+            Double time = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
+            String app = "No Apps Running";
 
-             String lat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
-             String lng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
-             Double time = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
+            //Since its possible app Cursor can be empty, must be handled separately
+            if(appNameCursor.getCount() > 0) {
+                appNameCursor.moveToFirst();
+                app = appNameCursor.getString(appNameCursor.getColumnIndex("application_name"));
+            }else{
+                Log.i(TAG, "There were no running apps");
+            }
 
             if(latCursor.getPosition() == 0 && prevTime < time ){
-                 if(prevLat.equals(lat) && prevLng.equals(lng))
+                 if(prevLat.equals(lat) && prevLng.equals(lng) && prevApp.equals(app))
                  {
-                     //TEMPORARY - send all values to DB
-                     try{
-                         String[] params = {url,name,lat,lng,time+""};
-                         sendData(params);
-                         Log.i(TAG, "Sent duplicate location");
-                     }catch(Exception except){
-                         Log.e(TAG, "There was an error sending the data to the database", except);
-                     }
-                     timesOccured++;
+                     //Originally sent every location to database, now only sending different locations
+                     Log.i(TAG, "Tried to send a duplicate location and app");
                  }
                  else{
-                     timesOccured=0;
-                     //If the location is not the same, send it to the database!
+                     //If the location or app is not the same, send it to the database!
                      try{
-                         String[] params = {url,name,lat,lng,time+""};
+                         String[] params = {url,name,lat,lng,app,time+""};
                          sendData(params);
-                         Log.i(TAG, "Sent new location");
+                         Log.i(TAG, "Sent new location and App");
                      }catch(Exception except){
                          Log.e(TAG, "There was an error sending the data to the database", except);
                      }
                  }
-                 if(timesOccured == 12) {
-                     Plugin.data.add(new Data(lat, lng, time+""));
-                 }
-
-
-
-                //Advance the cursors, but only if size of DB changed
-                //int newCount = latCursor.getCount();
-                //if(oldRows < newCount){
-                //    latCursor.moveToNext();
-                //    lngCursor.moveToNext();
-                //    timeCursor.moveToNext();
-                //    oldRows = newCount;
-                //    Log.i(TAG, "Advanced the cursors");
-                //}
-
              }else{
                 if(latCursor.getPosition() != 0)
                     Log.i(TAG, "The cursors were not pointed at 0");
@@ -141,26 +140,21 @@ public class GpsObserver extends ContentObserver {
 
             Log.i(TAG,lat);
             Log.i(TAG, lng);
+            Log.i(TAG, app);
             Log.i(TAG, time + "");
-            store(lat,lng,time+"");
 
-             prevLat = lat;
-             prevLng = lng;
-             prevTime = time;
+            prevLat = lat;
+            prevLng = lng;
+            prevTime = time;
+            prevApp = app;
 
-
-        }else {
+        } else {
             Log.i(TAG, "Cursors were null");
         }
     }
 
-    public void store(String lat, String lng, String time){
-
-
-    }
-
     //Prepare and send data to database
-    void sendData(String[] params){
+    void sendData(String [] params){
         //Set up network info
         ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
@@ -214,7 +208,8 @@ public class GpsObserver extends ContentObserver {
                 postData.put("Device",params[1]);
                 postData.put("Latitude",params[2]);
                 postData.put("Longitude",params[3]);
-                postData.put("Time",longToDate(params[4]));
+                postData.put("Time",longToDate(params[5]));
+                postData.put("Application", params[4]);
 
                 //Save destination url
                 this.destination = params[0];
