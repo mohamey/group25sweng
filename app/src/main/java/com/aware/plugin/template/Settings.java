@@ -12,7 +12,7 @@ import com.aware.Aware;
 public class Settings extends PreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     //Plugin settings in XML @xml/preferences
-    public static final String STATUS_PLUGIN_TEMPLATE = "status_plugin_template";
+    public static final String STATUS_PLUGIN_LCP = "status_plugin_lcp";
 
     //Plugin settings UI elements
     private static CheckBoxPreference status;
@@ -29,18 +29,18 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     protected void onResume() {
         super.onResume();
 
-        status = (CheckBoxPreference) findPreference(STATUS_PLUGIN_TEMPLATE);
-        if( Aware.getSetting(this, STATUS_PLUGIN_TEMPLATE).length() == 0 ) {
-            Aware.setSetting( this, STATUS_PLUGIN_TEMPLATE, true ); //by default, the setting is true on install
+        status = (CheckBoxPreference) findPreference(STATUS_PLUGIN_LCP);
+        if( Aware.getSetting(this, STATUS_PLUGIN_LCP).length() == 0 ) {
+            Aware.setSetting( this, STATUS_PLUGIN_LCP, true ); //by default, the setting is true on install
         }
-        status.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_TEMPLATE).equals("true"));
+        status.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_LCP).equals("true"));
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Preference setting = findPreference(key);
 
-        if( setting.getKey().equals(STATUS_PLUGIN_TEMPLATE) ) {
+        if( setting.getKey().equals(STATUS_PLUGIN_LCP) ) {
             boolean is_active = sharedPreferences.getBoolean(key, false);
             Aware.setSetting(this, key, is_active);
             if( is_active ) {

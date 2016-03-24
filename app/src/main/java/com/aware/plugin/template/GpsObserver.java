@@ -6,12 +6,14 @@ import com.aware.providers.Applications_Provider;
 import android.content.Context;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.location.Address;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
+import android.location.Geocoder;
 
 import com.aware.utils.Http;
 
@@ -20,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.List;
 
 
 /**
@@ -77,6 +80,8 @@ public class GpsObserver extends ContentObserver {
                 }catch(Exception except) {
                     Log.e(TAG, "There was an error logging the initial location and app value", except);
                 }
+                Log.i(TAG, prevTime+"");
+                Log.i(TAG, gpsToAddress(prevLat, prevLng));
             }
 
         }catch(Exception except){
@@ -142,6 +147,7 @@ public class GpsObserver extends ContentObserver {
             Log.i(TAG, lng);
             Log.i(TAG, app);
             Log.i(TAG, time + "");
+            Log.i(TAG, gpsToAddress(lat,lng));
 
             prevLat = lat;
             prevLng = lng;
@@ -179,6 +185,25 @@ public class GpsObserver extends ContentObserver {
             backlog.add(temp);
             Log.i(TAG, "Added new Data object to the backlog");
         }
+    }
+
+    public String gpsToAddress(String lat, String lng){
+        Geocoder geocoder = new Geocoder(context);
+        String result = "unknown address";
+        try{
+            Address location = geocoder.getFromLocation(Double.parseDouble(lat), Double.parseDouble(lng), 1).get(0);
+            result = location.getAddressLine(0);
+            int count = 1;
+            String temp = "";
+            while((temp = location.getAddressLine(count)) != null){
+                result = result+", "+temp;
+                count++;
+            }
+            Log.i(TAG, result);
+        }catch(Exception except){
+            Log.e(TAG, "There was an error getting the locations", except);
+        }
+        return result;
     }
 
     public class sendToDatabase extends AsyncTask<String, Void, Void>{

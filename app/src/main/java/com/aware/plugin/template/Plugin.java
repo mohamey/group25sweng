@@ -38,8 +38,8 @@ public class Plugin extends Aware_Plugin {
 
 
         //Initialize our plugin's settings
-        if( Aware.getSetting(this, Settings.STATUS_PLUGIN_TEMPLATE).length() == 0 ) {
-            Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
+        if( Aware.getSetting(this, Settings.STATUS_PLUGIN_LCP).length() == 0 ) {
+            Aware.setSetting(this, Settings.STATUS_PLUGIN_LCP, true);
         }
 
         //some temporary variables
@@ -112,7 +112,7 @@ public class Plugin extends Aware_Plugin {
     public void onDestroy() {
         super.onDestroy();
         Aware.stopSensor(this, Aware_Preferences.STATUS_ESM); //turn off ESM for our plugin
-        Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, false);
+        Aware.setSetting(this, Settings.STATUS_PLUGIN_LCP, false);
         getContentResolver().unregisterContentObserver(gpsO);
 
         //Deactivate any sensors/plugins you activated here
