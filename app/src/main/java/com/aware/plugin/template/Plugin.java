@@ -9,7 +9,6 @@ import android.util.Log;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.ESM;
-import com.aware.providers.ESM_Provider;
 import com.aware.providers.Locations_Provider;
 import com.aware.utils.Aware_Plugin;
 import com.aware.utils.Scheduler;
@@ -18,19 +17,27 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 
 public class Plugin extends Aware_Plugin {
 
-    static ArrayList<Data> data = new ArrayList<Data>();
-    Data dummy = new Data("53.3478", "6.2597", "15:00:00");
+    private ArrayList<Data> dataArrayList()
+    {
+        ArrayList<Data> dataArray = new ArrayList<Data>();
+        Data dummy = new Data("53.3478", "6.2597", "15:00:00");
+        Data dummy1 = new Data("53.3478", "6.2597", "17:00:00");
+
+        dataArray.add(dummy);
+        dataArray.add(dummy1);
+        return dataArray;
+    }
 
     GpsObserver gpsO;
     final String TAG = "AWARE-PLUGIN";
     @Override
     public void onCreate() {
         super.onCreate();
-        data.add(dummy);
         DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
         if(DEBUG)
             Log.d("Begin", "Group 25 plugin running");
@@ -79,7 +86,7 @@ public class Plugin extends Aware_Plugin {
         //Add permissions you need (Support for Android M) e.g.,
         //REQUIRED_PERMISSIONS.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_FINE_LOCATION);
-
+        REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_NETWORK_STATE);
         //To sync data to the server, you'll need to set this variables from your ContentProvider
         //DATABASE_TABLES = Provider.DATABASE_TABLES
         //TABLES_FIELDS = Provider.TABLES_FIELDS
@@ -124,27 +131,69 @@ public class Plugin extends Aware_Plugin {
     //Schedule a survey
     private void scheduleMorningQuestionnaire(){
         try{
-            Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
-            schedule.addHour(15);
-            schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST);
-            schedule.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM);
-            schedule.addActionExtra(ESM.EXTRA_ESM, MORNINGJSON);
-            Scheduler.saveSchedule(getApplicationContext(), schedule);
+            ArrayList<String>  MORNINGJSON1 = new ArrayList<String>();
+            MORNINGJSON1 = arrayListQuestion(dataArrayList());
+            for(int i = 0; i<MORNINGJSON1.size(); i++)
+            {
+                Scheduler.Schedule schedule = new Scheduler.Schedule("morning_question");
+                String question = MORNINGJSON1.get(i);
+                Calendar calendar = new GregorianCalendar();
+                schedule.setTimer(calendar);
+                schedule.setActionType(Scheduler.ACTION_TYPE_BROADCAST);
+                schedule.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM);
+                schedule.addActionExtra(ESM.EXTRA_ESM, question);
+                Scheduler.saveSchedule(getApplicationContext(), schedule);
+
+            }
         }catch(JSONException e){
             Log.e(TAG, "Json Exception scheduling questionnaire!", e);
         }
 
     }
 
-    private static final String MORNINGJSON = "[{'esm':{" +
-            "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
-            "'esm_title': 'How did you sleep?'," +
-            "'esm_instructions': 'How did you sleep last night? Please provide an estimate on a scale from 1 (worst) to 10 (best) as well as a written description of your night!'," +
-            "'esm_submit': 'Submit.'," +
-            "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
-            "'esm_trigger': 'com.aware.plugin.goodmorning'" +
-            "}}]";
+    private ArrayList<String> arrayListQuestion(ArrayList<Data> dataList){
+        ArrayList<String>  MORNINGJSON1 = new ArrayList<String>();
+        ArrayList<String>  MORNINGJSON12 = new ArrayList<String>();
+        MORNINGJSON12.add("[{'esm':{" +
+                "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
+                "'esm_title': 'Location Context'," +
+                "'esm_instructions': 'Please give context to where you were at HELLO '," +
+                "'esm_submit': 'Submit.'," +
+                "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
+                "'esm_trigger': 'com.aware.plugin.goodmorning'" +
+                "}}]");
+        MORNINGJSON12.add("[{'esm':{" +
+                "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
+                "'esm_title': 'Location Context'," +
+                "'esm_instructions': 'Please give context to where you were at test12344 '," +
+                "'esm_submit': 'Submit.'," +
+                "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
+                "'esm_trigger': 'com.aware.plugin.goodmorning'" +
+                "}}]");
+        MORNINGJSON12.add("[{'esm':{" +
+                "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
+                "'esm_title': 'Location Context'," +
+                "'esm_instructions': 'Please give context to where you were at TEST2321312312 '," +
+                "'esm_submit': 'Submit.'," +
+                "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
+                "'esm_trigger': 'com.aware.plugin.goodmorning'" +
+                "}}]");
 
+
+        for(int i = 0; i<dataList.size(); i++)
+        {
+            MORNINGJSON1.add("[{'esm':{" +
+                    "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
+                    "'esm_title': 'Location Context'," +
+                    "'esm_instructions': 'Please give context to where you were at '," + i +
+                    "'esm_submit': 'Submit.'," +
+                    "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
+                    "'esm_trigger': 'com.aware.plugin.goodmorning'" +
+                    "}}]");
+        }
+        return MORNINGJSON12;
+
+    }
     //Get a survey to deliver to user
     // public String getSurvey() {
 
@@ -166,7 +215,7 @@ public class Plugin extends Aware_Plugin {
     // }
 
     //Assign Context to certain location
-    public void assignContext() {
+    /*public void assignContext() {
         try{
             Cursor context = getContentResolver().query(ESM_Provider.ESM_Data.CONTENT_URI, null, null, null, null);
             context.moveToLast();
@@ -185,7 +234,7 @@ public class Plugin extends Aware_Plugin {
         }
 
 
-    }
+    }*/
 }
 
 
