@@ -1,10 +1,5 @@
 package com.aware.plugin.template;
 
-import android.location.Address;
-import android.location.Geocoder;
-
-import java.util.List;
-
 /**
  * Created by Nicky on 03-Mar-16.
  */
@@ -15,8 +10,9 @@ class Data {
     String lng;
     String time;
     String context;
+    String app;
 
-    Data(String lat, String lng, String time ){
+    public Data(String lat, String lng, String time){
         this.lat = lat;
         this.lng = lng;
         this.time = time;
@@ -28,11 +24,12 @@ class Data {
         this.name = dbData[1];
         this.lat = dbData[2];
         this.lng = dbData[3];
-        this.time = dbData[4];
+        this.app = dbData[4];
+        this.time = dbData[5];
     }
 
     public String[] dumpArray(){
-        String[] result = {this.url,this.name,this.lat,this.lng,this.time};
+        String[] result = {this.url,this.name,this.lat,this.lng, this.app, this.time};
         return result;
     }
 }

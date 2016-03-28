@@ -7,6 +7,8 @@ import android.content.Context;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.location.Address;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -22,7 +24,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
-import java.util.List;
 
 
 /**
@@ -36,6 +37,7 @@ public class GpsObserver extends ContentObserver {
     String prevLat, prevLng, prevApp = "No Apps Running", name = Build.MODEL, url = "http://mohamey.me/aware.php";
     Double prevTime;
     ArrayList<Data> backlog;
+    protected LocationManager locationManager;
 
     //Declare the cursors
     Cursor latCursor, lngCursor, timeCursor, appNameCursor;
@@ -60,28 +62,44 @@ public class GpsObserver extends ContentObserver {
                 lngCursor.moveToFirst();
                 timeCursor.moveToFirst();
                 appNameCursor.moveToFirst();
-                try{
-                    prevLat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
-                    prevLng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
-                    prevTime = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
-                    if(appNameCursor.getCount() > 0)
-                        prevApp = appNameCursor.getString(appNameCursor.getColumnIndex("application_name"));
-                    else
-                        Log.i(TAG, "There were no apps running in the foreground");
-                }catch(Exception except){
-                    Log.e(TAG, "Problem logging cursor data", except);
-                }
+                //if prior data exists send last location to database
+                if((latCursor.getCount() != 0)){
+                    try {
+                        prevLat = latCursor.getString(latCursor.getColumnIndex("double_latitude"));
+                        prevLng = lngCursor.getString(lngCursor.getColumnIndex("double_longitude"));
+                        prevTime = timeCursor.getDouble(timeCursor.getColumnIndex("timestamp"));
+                        if (appNameCursor.getCount() > 0)
+                            prevApp = appNameCursor.getString(appNameCursor.getColumnIndex("application_name"));
+                        else
+                            Log.i(TAG, "There were no apps running in the foreground");
+                    } catch (Exception except) {
+                        Log.e(TAG, "Problem logging cursor data", except);
+                    }
 
-                //Send the initial location
-                try{
-                    String[] params = {url,name,prevLat,prevLng,prevApp,prevTime+""};
-                    sendData(params);
-                    Log.i(TAG, "Sent initial location and app to database");
-                }catch(Exception except) {
-                    Log.e(TAG, "There was an error logging the initial location and app value", except);
+                    //Send the initial location
+                    try {
+                        String[] params = {url, name, prevLat, prevLng, prevApp, prevTime + ""};
+                        sendData(params);
+                        Log.i(TAG, "Sent initial location and app to database");
+                    } catch (Exception except) {
+                        Log.e(TAG, "There was an error logging the initial location and app value", except);
+                    }
+                    Log.i(TAG, prevTime+"");
+                    Log.i(TAG, gpsToAddress(prevLat, prevLng));
+
+                   //Built in LocationManager - Gives more accurate location results
+                   /* try{
+                        locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                        Location temp = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        String longitude = temp.getLongitude()+"";
+                        String latitude = temp.getLatitude()+"";
+                        Log.i(TAG, latitude);
+                        Log.i(TAG, longitude);
+                        Log.i(TAG, gpsToAddress(latitude, longitude));
+                    }catch(SecurityException e){
+                        Log.e(TAG, "There was an error using location manager", e);
+                    }*/
                 }
-                Log.i(TAG, prevTime+"");
-                Log.i(TAG, gpsToAddress(prevLat, prevLng));
             }
 
         }catch(Exception except){
@@ -147,7 +165,11 @@ public class GpsObserver extends ContentObserver {
             Log.i(TAG, lng);
             Log.i(TAG, app);
             Log.i(TAG, time + "");
-            Log.i(TAG, gpsToAddress(lat,lng));
+            try{
+                Log.i(TAG, gpsToAddress(lat,lng));
+            }catch(Exception e){
+                Log.e(TAG, "No Network to convert address", e);
+            }
 
             prevLat = lat;
             prevLng = lng;
@@ -157,6 +179,26 @@ public class GpsObserver extends ContentObserver {
         } else {
             Log.i(TAG, "Cursors were null");
         }
+    }
+
+    //Convert Coordinates to address
+    public String gpsToAddress(String lat, String lng){
+        Geocoder geocoder = new Geocoder(context);
+        String result = "unknown address";
+        try{
+            Address location = geocoder.getFromLocation(Double.parseDouble(lat), Double.parseDouble(lng), 1).get(0);
+            result = location.getAddressLine(0);
+            int count = 1;
+            String temp = "";
+            while((temp = location.getAddressLine(count)) != null){
+                result = result+", "+temp;
+                count++;
+            }
+            Log.i(TAG, result);
+        }catch(Exception except){
+            Log.e(TAG, "There was an error getting the locations", except);
+        }
+        return result;
     }
 
     //Prepare and send data to database
@@ -185,25 +227,6 @@ public class GpsObserver extends ContentObserver {
             backlog.add(temp);
             Log.i(TAG, "Added new Data object to the backlog");
         }
-    }
-
-    public String gpsToAddress(String lat, String lng){
-        Geocoder geocoder = new Geocoder(context);
-        String result = "unknown address";
-        try{
-            Address location = geocoder.getFromLocation(Double.parseDouble(lat), Double.parseDouble(lng), 1).get(0);
-            result = location.getAddressLine(0);
-            int count = 1;
-            String temp = "";
-            while((temp = location.getAddressLine(count)) != null){
-                result = result+", "+temp;
-                count++;
-            }
-            Log.i(TAG, result);
-        }catch(Exception except){
-            Log.e(TAG, "There was an error getting the locations", except);
-        }
-        return result;
     }
 
     public class sendToDatabase extends AsyncTask<String, Void, Void>{
@@ -235,6 +258,7 @@ public class GpsObserver extends ContentObserver {
                 postData.put("Longitude",params[3]);
                 postData.put("Time",longToDate(params[5]));
                 postData.put("Application", params[4]);
+                postData.put("Address", gpsToAddress(params[2], params[3]));
 
                 //Save destination url
                 this.destination = params[0];
