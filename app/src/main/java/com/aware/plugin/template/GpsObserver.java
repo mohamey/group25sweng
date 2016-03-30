@@ -1,5 +1,6 @@
 package com.aware.plugin.template;
 
+import com.aware.ESM;
 import com.aware.providers.Locations_Provider;
 import com.aware.providers.Applications_Provider;
 
@@ -18,11 +19,19 @@ import android.util.Log;
 import android.location.Geocoder;
 
 import com.aware.utils.Http;
+import com.aware.utils.Scheduler;
+import com.aware.utils.Scheduler.Schedule;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Hashtable;
 
 
@@ -38,6 +47,8 @@ public class GpsObserver extends ContentObserver {
     Double prevTime;
     ArrayList<Data> backlog;
     protected LocationManager locationManager;
+    ArrayList<Schedule> scheduler;
+    JSONArray EsmQuestions = new JSONArray();
 
     //Declare the cursors
     Cursor latCursor, lngCursor, timeCursor, appNameCursor;
@@ -47,7 +58,7 @@ public class GpsObserver extends ContentObserver {
 
         //When network is unavailable, log locations here
         backlog = new ArrayList<Data>();
-
+        scheduler = new ArrayList<Schedule>();
         try{
             //Cursors used to get data from phone
             latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
@@ -78,6 +89,14 @@ public class GpsObserver extends ContentObserver {
 
                     //Send the initial location
                     try {
+                        //Add location to esm
+                        if(addToScheduler(gpsToAddress(prevLat, prevLng),longToDate(prevTime+""))){
+                            Log.i(TAG, "Successfully added new ESM");
+                        }else{
+                            Log.i(TAG, "Failed to add ESM");
+                        }
+
+                        //Send location
                         String[] params = {url, name, prevLat, prevLng, prevApp, prevTime + ""};
                         sendData(params);
                         Log.i(TAG, "Sent initial location and app to database");
@@ -141,12 +160,28 @@ public class GpsObserver extends ContentObserver {
             if(latCursor.getPosition() == 0 && prevTime < time ){
                  if(prevLat.equals(lat) && prevLng.equals(lng) && prevApp.equals(app))
                  {
+                     /*if(addToScheduler(gpsToAddress(lat, lng),longToDate(time+""))){
+                         Log.i(TAG, "Successfully added new ESM");
+                     }else{
+                         Log.i(TAG, "Failed to add ESM");
+                     }
+                     //Send data to database
+                     String[] params = {url,name,lat,lng,app,time+""};
+                     sendData(params);*/
                      //Originally sent every location to database, now only sending different locations
                      Log.i(TAG, "Tried to send a duplicate location and app");
                  }
                  else{
                      //If the location or app is not the same, send it to the database!
                      try{
+                         //Add new location to ESM
+                         //Add location to esm
+                         if(addToScheduler(gpsToAddress(lat, lng),longToDate(time+""))){
+                             Log.i(TAG, "Successfully added new ESM");
+                         }else{
+                             Log.i(TAG, "Failed to add ESM");
+                         }
+                         //Send data to database
                          String[] params = {url,name,lat,lng,app,time+""};
                          sendData(params);
                          Log.i(TAG, "Sent new location and App");
@@ -277,14 +312,47 @@ public class GpsObserver extends ContentObserver {
                 Log.e(TAG, "There was an error sending the data", except);
             }
         }
-
-        private String longToDate(String param){
-            long temp = Double.valueOf(param).longValue();
-            Date date = new Date(temp);
-            Format format = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-            return format.format(date);
-        }
-
     }
 
+    public String longToDate(String param){
+        long temp = Double.valueOf(param).longValue();
+        Date date = new Date(temp);
+        Format format = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        return format.format(date);
+    }
+
+    //Add new location to ESM Surveys
+    public boolean addToScheduler(String address, String time){
+        try{
+            Schedule temp = new Schedule("Context Questions");
+            String question = "Can you give context to this address: "+address+". You were here at: "+time;
+            JSONObject esmWrapper = new JSONObject();
+            JSONObject esm = new JSONObject();
+            try{
+                esm.put("esm_type", ESM.TYPE_ESM_TEXT);
+                esm.put("esm_title", "Location Context");
+                esm.put("esm_instructions", question);
+                esm.put("esm_submit", "Submit.");
+                esm.put("esm_expiration_threshold", 300);
+                esm.put("esm_trigger", "com.aware.plugin.template");
+                esmWrapper.put("esm", esm);
+                Log.i(TAG, "ESM Wrapper contains: "+esmWrapper);
+                EsmQuestions.put(esmWrapper);
+            }catch(Exception e){
+                Log.e(TAG, "Error building esm", e);
+            }
+
+            Calendar calendar = new GregorianCalendar();
+            temp.setTimer(calendar);
+            temp.setActionType(Scheduler.ACTION_TYPE_BROADCAST);
+            temp.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM);
+            temp.addActionExtra(ESM.EXTRA_ESM, EsmQuestions.toString());
+            Scheduler.saveSchedule(context, temp);
+            scheduler.add(temp);
+        }catch(Exception e){
+            Log.e(TAG, "Error adding new scheduler object", e);
+            return false;
+        }
+        return true;
+    }
 }

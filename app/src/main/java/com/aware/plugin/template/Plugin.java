@@ -33,11 +33,13 @@ public class Plugin extends Aware_Plugin {
         return dataArray;
     }
 
+    ArrayList<Scheduler.Schedule> scheduler;
     GpsObserver gpsO;
     final String TAG = "AWARE-PLUGIN";
     @Override
     public void onCreate() {
         super.onCreate();
+        scheduler = new ArrayList<Scheduler.Schedule>();
         DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
         if(DEBUG)
             Log.d("Begin", "Group 25 plugin running");
@@ -94,8 +96,10 @@ public class Plugin extends Aware_Plugin {
 
         //Cursor context;
 
-        scheduleMorningQuestionnaire(); //see further below
 
+        //scheduleMorningQuestionnaire(); //see further below
+        addToScheduler("Trinity College Dublin", "The Crack O' Dawn");
+        addToScheduler("Boo UCD", "Who cares");
         //assignContext();
 
 
@@ -110,7 +114,7 @@ public class Plugin extends Aware_Plugin {
 
         //Check if the user has toggled the debug messages
         DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
-
+        Aware.setSetting(getApplicationContext(), Aware_Preferences.STATUS_ESM, true);
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -235,6 +239,33 @@ public class Plugin extends Aware_Plugin {
 
 
     }*/
+
+    //Add new location to ESM Surveys
+    public boolean addToScheduler(String address, String time){
+        try{
+            Scheduler.Schedule temp = new Scheduler.Schedule("Context Questions");
+            String question = "Can you give context to this address: "+address+". You were here at: "+time;
+            String q = "[{'esm':{" +
+                    "'esm_type':" + ESM.TYPE_ESM_TEXT + "," +
+                    "'esm_title': 'Location Context'," +
+                    "'esm_instructions':" + question + "," +
+                    "'esm_submit': 'Submit.'," +
+                    "'esm_expiration_threshold': 300," + //the user has 5 minutes to respond. Set to 0 to disable
+                    "'esm_trigger': 'com.aware.plugin.goodmorning'" +
+                    "}}]";
+            Calendar calendar = new GregorianCalendar();
+            temp.addHour(14);
+            temp.setActionType(Scheduler.ACTION_TYPE_BROADCAST);
+            temp.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM);
+            temp.addActionExtra(ESM.EXTRA_ESM, question);
+            Scheduler.saveSchedule(getApplicationContext(), temp);
+            scheduler.add(temp);
+        }catch(Exception e){
+            Log.e(TAG, "Error adding new scheduler object", e);
+            return false;
+        }
+        return true;
+    }
 }
 
 
