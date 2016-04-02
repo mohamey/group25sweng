@@ -4,7 +4,12 @@ import com.aware.ESM;
 import com.aware.providers.Locations_Provider;
 import com.aware.providers.Applications_Provider;
 
+import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.location.Address;
@@ -33,6 +38,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -52,6 +59,7 @@ public class GpsObserver extends ContentObserver {
 
     //Declare the cursors
     Cursor latCursor, lngCursor, timeCursor, appNameCursor;
+
     public GpsObserver(Handler handler,Context myContext) {
         super(handler);
         context=myContext;
@@ -59,7 +67,7 @@ public class GpsObserver extends ContentObserver {
         //When network is unavailable, log locations here
         backlog = new ArrayList<Data>();
         scheduler = new ArrayList<Schedule>();
-        try{
+        /*try{
             //Cursors used to get data from phone
             latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
             lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
@@ -107,31 +115,48 @@ public class GpsObserver extends ContentObserver {
                     Log.i(TAG, gpsToAddress(prevLat, prevLng));
 
                    //Built in LocationManager - Gives more accurate location results
-                   /* try{
-                        locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-                        Location temp = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        String longitude = temp.getLongitude()+"";
-                        String latitude = temp.getLatitude()+"";
-                        Log.i(TAG, latitude);
-                        Log.i(TAG, longitude);
-                        Log.i(TAG, gpsToAddress(latitude, longitude));
+                   try{
+
+                       locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                       Location temp = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                       String longitude = temp.getLongitude()+"";
+                       String latitude = temp.getLatitude()+"";
+                       String [] params = {url, name, latitude, longitude, prevApp, System.currentTimeMillis()+""};
+                       Log.i(TAG, latitude);
+                       Log.i(TAG, longitude);
+                       Log.i(TAG, gpsToAddress(latitude, longitude));
                     }catch(SecurityException e){
                         Log.e(TAG, "There was an error using location manager", e);
-                    }*/
+                    }
                 }
             }
 
         }catch(Exception except){
             Log.e(TAG, "There was an error initialising the cursor", except);
+        }*/
+
+        //Get the location
+        String[] gps = getGPSLocation();
+        String app = getAppForeground();
+        if(!gps[0].equals("N/A") && !gps[1].equals("N/A")){
+            try{
+                String[] params = {url, name, gps[0], gps[1], app, System.currentTimeMillis()+""};
+                sendData(params);
+            }catch(Exception e){
+                Log.e(TAG, "There was an error sending data", e);
+            }
         }
 
+        prevApp = app;
+        prevLat = formatCoord(gps[0]);
+        prevLng = formatCoord(gps[1]);
     }
 
     public void onChange(boolean selfChange) {
         super.onChange(selfChange);
         //Reinitialise cursors
-        try{
-            latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI,null,null,null, Locations_Provider.Locations_Data.LATITUDE+" DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
+        /*try{
+            latCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LATITUDE + " DESC LIMIT 1");    //from tutorial: "http://www.awareframework.com/how-do-i-read-data/"
             lngCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.LONGITUDE+" DESC LIMIT 1");   //slight change made: added 'context', otherwise getContentResolver didn't work.
             timeCursor = context.getContentResolver().query(Locations_Provider.Locations_Data.CONTENT_URI, null, null, null, Locations_Provider.Locations_Data.TIMESTAMP+" DESC LIMIT 1");  //got idea for this from "http://stackoverflow.com/questions/8017540/cannot-use-the-contentresolver".
             appNameCursor = context.getContentResolver().query(Applications_Provider.Applications_Foreground.CONTENT_URI, null, null, null, Applications_Provider.Applications_Foreground.APPLICATION_NAME + " DESC LIMIT 1");
@@ -167,7 +192,7 @@ public class GpsObserver extends ContentObserver {
                      }
                      //Send data to database
                      String[] params = {url,name,lat,lng,app,time+""};
-                     sendData(params);*/
+                     sendData(params);
                      //Originally sent every location to database, now only sending different locations
                      Log.i(TAG, "Tried to send a duplicate location and app");
                  }
@@ -213,7 +238,27 @@ public class GpsObserver extends ContentObserver {
 
         } else {
             Log.i(TAG, "Cursors were null");
+        }*/
+
+        //Get gps location and app
+        String[] gps = getGPSLocation();
+        String app = getAppForeground();
+        if(!gps[0].equals("N/A") && !gps[1].equals("N/A")) {
+            if((!formatCoord(gps[0]).equals(prevLat)) && (!formatCoord(gps[1]).equals(prevLng)) && (!app.equals(prevApp))){
+                try {
+                    String[] params = {url, name, gps[0], gps[1], app, System.currentTimeMillis() + ""};
+                    sendData(params);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error sending data to database", e);
+                }
+                prevLat = gps[0];
+                prevLng=gps[1];
+                prevApp=app;
+            }else{
+                Log.i(TAG, "Tried sending duplicate location");
+            }
         }
+
     }
 
     //Convert Coordinates to address
@@ -234,6 +279,44 @@ public class GpsObserver extends ContentObserver {
             Log.e(TAG, "There was an error getting the locations", except);
         }
         return result;
+    }
+
+    public String getAppForeground(){
+        String appName = "No apps Running";
+        Cursor appCursor = context.getContentResolver().query(Applications_Provider.Applications_History.CONTENT_URI, null, null, null, Applications_Provider.Applications_History.APPLICATION_NAME + " DESC LIMIT 1");
+        try{
+            int i =0;
+            if(appCursor.getCount() > 0){
+                appCursor.moveToFirst();
+                appName=appCursor.getString(appCursor.getColumnIndex("application_name"));
+            }
+            Log.i(TAG, "App name is: "+appName);
+        }catch(Exception e){
+            Log.e(TAG, "Problem getting app cursor", e);
+        }
+        return appName;
+    }
+
+    public String[] getGPSLocation(){
+        String[] result = {"N/A", "N/A"};
+        String longitude, latitude;
+        try{
+            locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            Location temp = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            longitude = temp.getLongitude()+"";
+            latitude = temp.getLatitude()+"";
+            result[0] = latitude.substring(0, 8);
+            result[1] = longitude.substring(0, 8);
+            Log.i(TAG, "Locations are: "+result[0]+", "+result[1]);
+        }catch(SecurityException e){
+            Log.e(TAG, "Insufficient permissions to get location", e);
+        }
+        return result;
+    }
+
+    public String formatCoord(String coord){
+        int dotIndex = coord.indexOf('.');
+        return coord.substring(0, dotIndex+3);
     }
 
     //Prepare and send data to database
@@ -297,6 +380,11 @@ public class GpsObserver extends ContentObserver {
 
                 //Save destination url
                 this.destination = params[0];
+
+                //Add to ESM Scheduler
+                Log.i(TAG, "Adding to scheduler");
+                addToScheduler(gpsToAddress(params[2], params[3]), longToDate(params[5]));
+                Log.i(TAG, "Successfully added esm to scheduler");
             }catch(Exception except){
                 Log.e("AWARE-PLUGIN", "There was an error in method loadData", except);
             }
@@ -343,7 +431,10 @@ public class GpsObserver extends ContentObserver {
             }
 
             Calendar calendar = new GregorianCalendar();
-            temp.setTimer(calendar);
+            Settings setting = new Settings();
+            String preferredHour = setting.getPreferredTime();
+            Log.i(TAG, "Preferred Hour is: "+preferredHour);
+            temp.addHour(Integer.parseInt(preferredHour));
             temp.setActionType(Scheduler.ACTION_TYPE_BROADCAST);
             temp.setActionClass(ESM.ACTION_AWARE_QUEUE_ESM);
             temp.addActionExtra(ESM.EXTRA_ESM, EsmQuestions.toString());

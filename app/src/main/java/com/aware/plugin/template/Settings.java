@@ -1,11 +1,15 @@
 package com.aware.plugin.template;
 
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import com.aware.Aware;
 
@@ -17,11 +21,15 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     //Plugin settings UI elements
     private static CheckBoxPreference status;
 
+    String preferredTime="21";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        this.preferredTime = prefs.getString("status_time_pref", "21");
+        Log.i("AWARE-PLUGIN", "Updated preferred time to: "+preferredTime);
         prefs.registerOnSharedPreferenceChangeListener(this);
     }
 
@@ -31,7 +39,7 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
 
         status = (CheckBoxPreference) findPreference(STATUS_PLUGIN_LCP);
         if( Aware.getSetting(this, STATUS_PLUGIN_LCP).length() == 0 ) {
-            Aware.setSetting( this, STATUS_PLUGIN_LCP, true ); //by default, the setting is true on install
+            Aware.setSetting(this, STATUS_PLUGIN_LCP, true); //by default, the setting is true on install
         }
         status.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_LCP).equals("true"));
     }
@@ -49,6 +57,15 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
                 Aware.stopPlugin(getApplicationContext(), "com.aware.plugin.template");
             }
             status.setChecked(is_active);
+        }else if(setting.getKey().equals("status_time_pref")){
+            String newTime = sharedPreferences.getString(key, "21");
+            this.preferredTime = newTime;
+            Log.i("AWARE-PLUGIN", "Preferred time updated to: "+preferredTime);
         }
+
+    }
+
+    public String getPreferredTime(){
+        return this.preferredTime;
     }
 }

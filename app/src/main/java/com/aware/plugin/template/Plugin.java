@@ -2,6 +2,7 @@ package com.aware.plugin.template;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.os.Handler;
 import android.util.Log;
@@ -62,16 +63,19 @@ public class Plugin extends Aware_Plugin {
         //GPS sensor:
         Aware.setSetting(this,Aware_Preferences.STATUS_LOCATION_GPS, true);
         Aware.setSetting(this,Aware_Preferences.FREQUENCY_LOCATION_GPS, gpsFrequency);
-        Aware.setSetting(this,Aware_Preferences.MIN_LOCATION_GPS_ACCURACY, gpsAccuracy);
+        Aware.setSetting(this, Aware_Preferences.MIN_LOCATION_GPS_ACCURACY, gpsAccuracy);
         Aware.setSetting(this, Aware_Preferences.LOCATION_EXPIRATION_TIME, locationExpTime);
         Aware.startSensor(this, Aware_Preferences.STATUS_LOCATION_GPS);
 
         //esm setup:
         Aware.setSetting(this, Aware_Preferences.STATUS_ESM, true); //we will need the ESMs
         Aware.startSensor(this, Aware_Preferences.STATUS_ESM); //ask AWARE to start ESM
-
-        //Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
-
+        Aware.setSetting(this, Aware_Preferences.STATUS_APPLICATIONS, true);
+        Aware.setSetting(this, Aware_Preferences.STATUS_LOCATION_GPS, true);
+        Aware.setSetting(this, Aware_Preferences.STATUS_LOCATION_NETWORK, true);
+        Aware.startSensor(this, Aware_Preferences.STATUS_APPLICATIONS);
+        Aware.startSensor(this, Aware_Preferences.STATUS_LOCATION_GPS);
+        Aware.startSensor(this, Aware_Preferences.STATUS_LOCATION_NETWORK);
 
         gpsO = new GpsObserver(new Handler(),this);    //two import options for 'Handler', I went with 'android.os.Handler'.
         getContentResolver().registerContentObserver(Locations_Provider.Locations_Data.CONTENT_URI, true, gpsO);
@@ -96,13 +100,6 @@ public class Plugin extends Aware_Plugin {
 
         //Cursor context;
 
-
-        //scheduleMorningQuestionnaire(); //see further below
-        addToScheduler("Trinity College Dublin", "The Crack O' Dawn");
-        addToScheduler("Boo UCD", "Who cares");
-        //assignContext();
-
-
         //Activate plugin
         Aware.startPlugin(this, "com.aware.plugin.template");
     }
@@ -111,10 +108,12 @@ public class Plugin extends Aware_Plugin {
     //This function gets called every 5 minutes by AWARE to make sure this plugin is still running.
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         //Check if the user has toggled the debug messages
         DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
         Aware.setSetting(getApplicationContext(), Aware_Preferences.STATUS_ESM, true);
+        Aware.setSetting(getApplicationContext(), Aware_Preferences.STATUS_APPLICATIONS, true);
+        Aware.setSetting(getApplicationContext(), Aware_Preferences.STATUS_LOCATION_GPS, true);
+        Aware.setSetting(getApplicationContext(), Aware_Preferences.STATUS_LOCATION_NETWORK, true);
         return super.onStartCommand(intent, flags, startId);
     }
 

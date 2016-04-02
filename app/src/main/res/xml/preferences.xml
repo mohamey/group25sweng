@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:key="plugin_template"
-    android:title="@string/app_name"
-    android:name="com.aware.plugin">
+android:key="plugin_template"
+android:title="@string/app_name"
+android:name="com.aware.plugin">
 
-    <com.aware.ui.Aware_Toolbar android:title="@string/app_name" />
+<com.aware.ui.Aware_Toolbar android:title="@string/app_name" />
 
     <CheckBoxPreference
-        android:key="status_plugin_template"
-        android:defaultValue="false"
+        android:key="status_plugin_lcp"
+        android:defaultValue="true"
         android:persistent="true"
         android:summary="Activate/deactivate plugin" />
+
+    <ListPreference
+        android:key="status_time_pref"
+        android:title="Preferred hour to answer ESM"
+        android:entries="@array/hour_times"
+        android:entryValues="@array/stringTimes"
+        android:defaultValue="19"/>
 
 </PreferenceScreen>
