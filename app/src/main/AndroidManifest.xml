@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.aware.plugin.template"
+    package="com.aware.plugin.location_context"
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -9,8 +9,8 @@
         android:theme="@style/Theme.Aware"
         tools:replace="android:icon, android:theme">
 
-        <service android:name="com.aware.plugin.template.Plugin" android:exported="true" />
-        <activity android:name="com.aware.plugin.template.Settings" android:exported="true" android:theme="@style/Theme.Aware" />
+        <service android:name="com.aware.plugin.location_context.Plugin" android:exported="true" />
+        <activity android:name="com.aware.plugin.location_context.Settings" android:exported="true" android:theme="@style/Theme.Aware" />
 
     </application>
 

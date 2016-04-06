@@ -1,4 +1,4 @@
-package com.aware.plugin.template;
+package com.aware.plugin.location_context;
 
 /**
  * Created by Nicky on 03-Mar-16.

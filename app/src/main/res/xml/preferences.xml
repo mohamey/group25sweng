@@ -17,6 +17,6 @@ android:name="com.aware.plugin">
         android:title="Preferred hour to answer ESM"
         android:entries="@array/hour_times"
         android:entryValues="@array/stringTimes"
-        android:defaultValue="19"/>
+        android:defaultValue="21"/>
 
 </PreferenceScreen>

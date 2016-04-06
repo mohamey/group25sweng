@@ -1,11 +1,8 @@
-package com.aware.plugin.template;
+package com.aware.plugin.location_context;
 
-import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
-import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
@@ -52,9 +49,9 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
             boolean is_active = sharedPreferences.getBoolean(key, false);
             Aware.setSetting(this, key, is_active);
             if( is_active ) {
-                Aware.startPlugin(getApplicationContext(), "com.aware.plugin.template");
+                Aware.startPlugin(getApplicationContext(), "com.aware.plugin.location_context");
             } else {
-                Aware.stopPlugin(getApplicationContext(), "com.aware.plugin.template");
+                Aware.stopPlugin(getApplicationContext(), "com.aware.plugin.location_context");
             }
             status.setChecked(is_active);
         }else if(setting.getKey().equals("status_time_pref")){
