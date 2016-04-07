@@ -1,5 +1,7 @@
 package com.aware.plugin.location_context;
 
+import com.aware.Aware;
+import com.aware.Aware_Preferences;
 import com.aware.ESM;
 import com.aware.providers.Applications_Provider;
 
@@ -27,9 +29,7 @@ import org.json.JSONObject;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Hashtable;
 
 
@@ -41,7 +41,7 @@ public class GpsObserver extends ContentObserver {
     //Required Global Variables
     Context context;
     private static final String TAG = "AWARE-PLUGIN";
-    String prevLat, prevLng, prevApp = "No Apps Running", name = Build.MODEL, url = "http://mohamey.me/aware.php";
+    String prevLat, prevLng, prevApp = "No Apps Running", name = "", url = "http://mohamey.me/aware.php";
     ArrayList<Data> backlog;
     protected LocationManager locationManager;
     ArrayList<Schedule> scheduler;
@@ -50,6 +50,9 @@ public class GpsObserver extends ContentObserver {
     public GpsObserver(Handler handler,Context myContext) {
         super(handler);
         context=myContext;
+
+        name = Aware.getSetting(context, Aware_Preferences.DEVICE_ID.toString());
+        Log.i(TAG, name);
 
         //When network is unavailable, log locations here
         backlog = new ArrayList<Data>();
